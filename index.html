@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aurelia Echoes</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <meta name="theme-color" content="#5C4033"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+</head>
+<body>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="app-header">
+    <div class="header-left">
+      <img src="icon.png" alt="Aurelia Echoes" class="app-logo"/>
+      <h1 class="app-title">Aurelia Echoes</h1>
+    </div>
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="library">📚 Library</button>
+      <button class="tab-btn" data-tab="series">📖 Series</button>
+      <button class="tab-btn" data-tab="wishlist">⭐ Wishlist</button>
+      <button class="tab-btn" data-tab="import">⬆️ Import</button>
+      <button class="tab-btn" data-tab="logs">🗒️ Logs</button>
+    </nav>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="app-main">
+
+    <!-- LIBRARY TAB -->
+    <section id="tab-library" class="tab-content active">
+      <div class="section-header">
+        <h2>My Library</h2>
+        <input type="text" id="searchBar" placeholder="🔍 Search books or authors..." class="search-bar"/>
+      </div>
+      <div id="libraryGrid" class="book-grid"></div>
+    </section>
+
+    <!-- SERIES TAB -->
+    <section id="tab-series" class="tab-content">
+      <div class="section-header">
+        <h2>My Series</h2>
+        <button class="btn-primary" id="addSeriesBtn">+ Track New Series</button>
+      </div>
+      <div id="seriesGrid" class="series-grid"></div>
+    </section>
+
+    <!-- WISHLIST TAB -->
+    <section id="tab-wishlist" class="tab-content">
+      <div class="section-header">
+        <h2>My Wishlist</h2>
+      </div>
+      <div id="wishlistGrid" class="book-grid wishlist-grid"></div>
+    </section>
+
+    <!-- IMPORT TAB -->
+    <section id="tab-import" class="tab-content">
+      <div class="section-header">
+        <h2>Import Your Library</h2>
+      </div>
+      <div class="import-options">
+
+        <div class="import-card">
+          <h3>📥 Import from CSV or JSON</h3>
+          <p>Export your Audible library and upload the file here.</p>
+          <input type="file" id="fileImport" accept=".csv,.json" class="file-input"/>
+          <label for="fileImport" class="btn-primary">Choose File</label>
+          <button class="btn-secondary" id="runImportBtn">Run Import</button>
+        </div>
+
+        <div class="import-card">
+          <h3>🔗 Audible Auto-Sync</h3>
+          <p>Coming in Phase 3 — browser extension will sync automatically.</p>
+          <button class="btn-disabled" disabled>Coming Soon</button>
+        </div>
+
+      </div>
+
+      <!-- IMPORT SUMMARY DIALOG -->
+      <div id="importSummary" class="import-summary hidden">
+        <h3>✅ Import Complete</h3>
+        <p id="summaryText"></p>
+        <button class="btn-secondary" id="closeSummaryBtn">Close</button>
+      </div>
+
+    </section>
+
+    <!-- LOGS TAB -->
+    <section id="tab-logs" class="tab-content">
+      <div class="section-header">
+        <h2>Import Logs</h2>
+        <button class="btn-secondary" id="shareLogBtn">📤 Share Log</button>
+      </div>
+      <div id="logViewer" class="log-viewer"></div>
+    </section>
+
+  </main>
+
+  <!-- FLOATING ACTION BUTTON (mobile) -->
+  <button class="fab" id="fabBtn">+</button>
+
+  <!-- SCRIPTS -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+  <script src="db.js"></script>
+  <script src="import.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
