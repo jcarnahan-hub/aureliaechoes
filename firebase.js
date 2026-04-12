@@ -1,16 +1,14 @@
 // ── AURELIA ECHOES: Firebase Configuration ──
-// Replace each PASTE_YOUR_..._HERE value with your real Firebase keys
 
-const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY_HERE",
-  authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
-  projectId: "PASTE_YOUR_PROJECT_ID_HERE",
-  storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID_HERE",
-  appId: "PASTE_YOUR_APP_ID_HERE"
-};
+firebase.initializeApp({
+  apiKey: "AIzaSyC3JQRjMKaG5AIHO_oOVa2MfyytrjLjITo",
+  authDomain: "aureliaechoes-audiobooks.firebaseapp.com",
+  projectId: "aureliaechoes-audiobooks",
+  storageBucket: "aureliaechoes-audiobooks.firebasestorage.app",
+  messagingSenderId: "819551747823",
+  appId: "1:819551747823:web:8f2200434ba0b97e08e51a"
+});
 
-firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
