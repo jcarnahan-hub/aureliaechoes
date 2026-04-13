@@ -1,23 +1,45 @@
 /* ══════════════════════════════════════════
    AURELIA ECHOES — Complete Stylesheet
-   Warm & Cozy Theme | All Phases
+   Parchment Light + Navy Dark Theme
+   With Light/Dark Toggle
 ══════════════════════════════════════════ */
 
-/* ── ROOT COLOR VARIABLES ── */
+/* ── LIGHT MODE (Parchment & Ink) ── */
 :root {
-  --bg-primary: #2C1A0E;
-  --bg-secondary: #3D2314;
-  --bg-card: #4A2E1A;
-  --bg-card-hover: #5C3D25;
-  --accent-gold: #C9A84C;
-  --accent-warm: #D4845A;
-  --text-primary: #F5E6D3;
-  --text-secondary: #B89880;
-  --text-muted: #7A5C45;
-  --border: #6B4226;
-  --shadow: rgba(0,0,0,0.4);
+  --bg-primary: #FDF6EC;
+  --bg-secondary: #F5ECD8;
+  --bg-card: #EDE0C8;
+  --bg-card-hover: #E2D0B0;
+  --accent-gold: #8B6914;
+  --accent-warm: #A0522D;
+  --text-primary: #3C2010;
+  --text-secondary: #6B4226;
+  --text-muted: #9C7050;
+  --border: #C9A87C;
+  --shadow: rgba(0,0,0,0.12);
   --font-heading: 'Playfair Display', serif;
   --font-body: 'Lato', sans-serif;
+  --toggle-bg: #C9A87C;
+  --toggle-dot: #FDF6EC;
+  --header-border: #C9A84C;
+}
+
+/* ── DARK MODE (Deep Navy & Gold) ── */
+[data-theme="dark"] {
+  --bg-primary: #0D1E2E;
+  --bg-secondary: #142638;
+  --bg-card: #1B3A5C;
+  --bg-card-hover: #224870;
+  --accent-gold: #C9A84C;
+  --accent-warm: #D4845A;
+  --text-primary: #E8F0F8;
+  --text-secondary: #8BADC8;
+  --text-muted: #4A6A84;
+  --border: #2A5080;
+  --shadow: rgba(0,0,0,0.4);
+  --toggle-bg: #C9A84C;
+  --toggle-dot: #0D1E2E;
+  --header-border: #C9A84C;
 }
 
 /* ── RESET ── */
@@ -37,12 +59,13 @@ html, body {
   font-family: var(--font-body);
   font-size: 16px;
   overflow-x: hidden;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* ── HEADER ── */
 .app-header {
   background: var(--bg-secondary);
-  border-bottom: 2px solid var(--accent-gold);
+  border-bottom: 2px solid var(--header-border);
   padding: 12px 20px;
   display: flex;
   flex-direction: column;
@@ -51,15 +74,23 @@ html, body {
   top: 0;
   z-index: 100;
   box-shadow: 0 2px 12px var(--shadow);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
 }
 
-/* ── ICON — fixed size, no stretching ── */
+/* ── ICON ── */
 .app-logo {
   width: 40px;
   height: 40px;
@@ -79,6 +110,51 @@ html, body {
   letter-spacing: 1px;
   white-space: nowrap;
 }
+
+/* ── THEME TOGGLE ── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.toggle-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.toggle-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--toggle-bg);
+  position: relative;
+  transition: background 0.3s;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.toggle-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--toggle-dot);
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .toggle-thumb {
+  transform: translateX(20px);
+}
+
+.toggle-icon { font-size: 14px; line-height: 1; }
 
 /* ── TAB NAVIGATION ── */
 .tab-nav {
@@ -126,13 +202,8 @@ html, body {
 }
 
 /* ── TAB PANELS ── */
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
-}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
 /* ── SECTION HEADER ── */
 .section-header {
@@ -164,9 +235,8 @@ html, body {
   font-family: var(--font-body);
 }
 
-.search-bar:focus {
-  border-color: var(--accent-gold);
-}
+.search-bar::placeholder { color: var(--text-muted); }
+.search-bar:focus { border-color: var(--accent-gold); }
 
 /* ── BOOK GRID ── */
 .book-grid {
@@ -181,7 +251,7 @@ html, body {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   cursor: pointer;
   position: relative;
 }
@@ -210,9 +280,7 @@ html, body {
   font-size: 2.5rem;
 }
 
-.book-info {
-  padding: 10px;
-}
+.book-info { padding: 10px; }
 
 .book-title {
   font-family: var(--font-heading);
@@ -257,7 +325,7 @@ html, body {
   filter: sepia(40%);
 }
 
-/* ── WISHLIST ACTION BUTTONS ── */
+/* ── WISHLIST ACTIONS ── */
 .wishlist-actions {
   display: flex;
   gap: 6px;
@@ -314,9 +382,7 @@ html, body {
   transition: box-shadow 0.2s;
 }
 
-.series-card:hover {
-  box-shadow: 0 6px 20px var(--shadow);
-}
+.series-card:hover { box-shadow: 0 6px 20px var(--shadow); }
 
 .series-title {
   font-family: var(--font-heading);
@@ -502,11 +568,11 @@ html, body {
 /* ── HIDDEN UTILITY ── */
 .hidden { display: none !important; }
 
-/* ── SERIES DIALOG OVERLAY ── */
+/* ── SERIES DIALOG ── */
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0,0,0,0.65);
   z-index: 500;
   display: flex;
   align-items: center;
@@ -515,7 +581,7 @@ html, body {
 }
 
 .dialog-box {
-  background: #3D2314;
+  background: var(--bg-secondary);
   border: 2px solid var(--accent-gold);
   border-radius: 16px;
   padding: 28px;
@@ -524,7 +590,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   position: relative;
   z-index: 501;
 }
@@ -549,7 +615,7 @@ html, body {
 }
 
 .dialog-input {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-primary);
   padding: 10px 14px;
@@ -562,6 +628,7 @@ html, body {
 }
 
 .dialog-input:focus { border-color: var(--accent-gold); }
+.dialog-input::placeholder { color: var(--text-muted); }
 
 .dialog-actions {
   display: flex;
@@ -570,9 +637,7 @@ html, body {
 }
 
 .dialog-actions .btn-primary,
-.dialog-actions .btn-secondary {
-  flex: 1;
-}
+.dialog-actions .btn-secondary { flex: 1; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
@@ -582,4 +647,5 @@ html, body {
   .book-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
   .series-grid { grid-template-columns: 1fr; }
   .import-options { grid-template-columns: 1fr; }
+  .toggle-label { display: none; }
 }
