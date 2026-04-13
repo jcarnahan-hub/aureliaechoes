@@ -211,12 +211,41 @@ function attachWishlistActions() {
   });
 }
 
-// ── ADD SERIES BUTTON ──
+// ── ADD SERIES DIALOG ──
+const seriesOverlay = document.getElementById('seriesDialogOverlay');
+const seriesNameInput = document.getElementById('seriesNameInput');
+const seriesAuthorInput = document.getElementById('seriesAuthorInput');
+
 document.getElementById('addSeriesBtn')?.addEventListener('click', () => {
-  const name = prompt('Enter the series name to track (e.g. "Wheel of Time"):');
-  if (!name) return;
-  const author = prompt('Enter the author name (e.g. "Robert Jordan"):');
-  findMissingBooks(name.trim(), author ? author.trim() : '');
+  seriesNameInput.value = '';
+  seriesAuthorInput.value = '';
+  seriesOverlay.classList.remove('hidden');
+  setTimeout(() => seriesNameInput.focus(), 100);
+});
+
+document.getElementById('cancelSeriesBtn')?.addEventListener('click', () => {
+  seriesOverlay.classList.add('hidden');
+});
+
+document.getElementById('confirmSeriesBtn')?.addEventListener('click', () => {
+  const name = seriesNameInput.value.trim();
+  const author = seriesAuthorInput.value.trim();
+  if (!name) {
+    seriesNameInput.style.borderColor = 'var(--accent-warm)';
+    return;
+  }
+  seriesOverlay.classList.add('hidden');
+  findMissingBooks(name, author);
+});
+
+// Close dialog if clicking outside it
+seriesOverlay?.addEventListener('click', (e) => {
+  if (e.target === seriesOverlay) seriesOverlay.classList.add('hidden');
+});
+
+// Allow pressing Enter to confirm
+seriesAuthorInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('confirmSeriesBtn').click();
 });
 
 // ── SEARCH BAR ──
