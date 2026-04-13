@@ -1,5 +1,6 @@
-// ── AURELIA ECHOES: Main App ──
+// ── AURELIA ECHOES: Main App (Phase 2) ──
 
+// ── TAB NAVIGATION ──
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -13,54 +14,147 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// ── RENDER LIBRARY ──
 async function renderLibrary() {
   const grid = document.getElementById('libraryGrid');
-  grid.innerHTML = '<p style="color:var(--text-muted)">Loading...</p>';
+  grid.innerHTML = '<p style="color:var(--text-muted)">Loading your library...</p>';
   const books = await getBooksByStatus('owned');
   grid.innerHTML = books.length
-    ? books.map(bookCardHTML).join('')
+    ? books.map(b => bookCardHTML(b, false)).join('')
     : '<p style="color:var(--text-muted)">No books yet. Use the Import tab to add your library!</p>';
 }
 
+// ── RENDER WISHLIST ──
 async function renderWishlist() {
   const grid = document.getElementById('wishlistGrid');
+  grid.innerHTML = '<p style="color:var(--text-muted)">Loading wishlist...</p>';
   const books = await getBooksByStatus('wishlist');
   grid.innerHTML = books.length
-    ? books.map(bookCardHTML).join('')
+    ? books.map(b => bookCardHTML(b, true)).join('')
     : '<p style="color:var(--text-muted)">Your wishlist is empty.</p>';
+  attachWishlistActions();
 }
 
+// ── RENDER SERIES ──
 async function renderSeries() {
   const grid = document.getElementById('seriesGrid');
+  grid.innerHTML = '<p style="color:var(--text-muted)">Loading series...</p>';
   const books = await getAllBooks();
   const seriesMap = {};
+
+  // Build series map from owned books
   books.forEach(book => {
     if (!book.series) return;
-    if (!seriesMap[book.series]) seriesMap[book.series] = { author: book.author, total: 0, owned: 0 };
-    seriesMap[book.series].total++;
-    if (book.status === 'owned') seriesMap[book.series].owned++;
+    if (!seriesMap[book.series]) {
+      seriesMap[book.series] = {
+        author: book.author,
+        owned: [],
+        missing: [],
+        upcoming: []
+      };
+    }
+    if (book.status === 'owned') seriesMap[book.series].owned.push(book);
+    if (book.status === 'missing') seriesMap[book.series].missing.push(book);
+    if (book.status === 'upcoming') seriesMap[book.series].upcoming.push(book);
   });
+
   const names = Object.keys(seriesMap);
-  grid.innerHTML = names.length ? names.map(name => {
+  if (!names.length) {
+    grid.innerHTML = '<p style="color:var(--text-muted)">No series found. Import books with series data or use "+ Track New Series" above.</p>';
+    return;
+  }
+
+  grid.innerHTML = names.map(name => {
     const s = seriesMap[name];
-    const pct = Math.round((s.owned / s.total) * 100);
-    return `<div class="series-card">
-      <div class="series-title">${name}</div>
-      <div class="series-author">by ${s.author || 'Unknown'}</div>
-      <div class="series-progress-bar"><div class="series-progress-fill" style="width:${pct}%"></div></div>
-      <div class="series-count">${s.owned} of ${s.total} owned · ${pct}% complete</div>
-    </div>`;
-  }).join('') : '<p style="color:var(--text-muted)">No series found. Import books with series data to see them here.</p>';
+    const total = s.owned.length + s.missing.length + s.upcoming.length;
+    const pct = total ? Math.round((s.owned.length / total) * 100) : 0;
+    return `
+      <div class="series-card" data-series="${name}">
+        <div class="series-title">${name}</div>
+        <div class="series-author">by ${s.author || 'Unknown'}</div>
+        <div class="series-progress-bar">
+          <div class="series-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="series-count">
+          ✅ ${s.owned.length} owned
+          ${s.missing.length ? `· ❌ ${s.missing.length} missing` : ''}
+          ${s.upcoming.length ? `· 🔜 ${s.upcoming.length} upcoming` : ''}
+          · ${pct}% complete
+        </div>
+        <div class="series-books">
+          ${s.owned.map(b => miniBookCard(b, 'owned')).join('')}
+          ${s.missing.map(b => miniBookCard(b, 'missing')).join('')}
+          ${s.upcoming.map(b => miniBookCard(b, 'upcoming')).join('')}
+        </div>
+        <button class="btn-secondary series-refresh-btn" data-series="${name}" data-author="${s.author}" style="margin-top:14px;font-size:0.8rem;padding:6px 14px;">
+          🔍 Find Missing Books
+        </button>
+      </div>`;
+  }).join('');
+
+  // Attach refresh buttons
+  document.querySelectorAll('.series-refresh-btn').forEach(btn => {
+    btn.addEventListener('click', () => findMissingBooks(btn.dataset.series, btn.dataset.author));
+  });
 }
 
+// ── MINI BOOK CARD (inside series view) ──
+function miniBookCard(book, status) {
+  const cover = book.coverUrl
+    ? `<img src="${book.coverUrl}" alt="${book.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--bg-secondary);border-radius:6px;">🎧</div>`;
+
+  const overlay = status === 'missing'
+    ? `<div style="position:absolute;inset:0;background:rgba(44,26,14,0.6);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--accent-warm);font-weight:700;">MISSING</div>`
+    : status === 'upcoming'
+    ? `<div style="position:absolute;inset:0;background:rgba(44,26,14,0.6);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--accent-gold);font-weight:700;">UPCOMING</div>`
+    : '';
+
+  return `<div style="position:relative;width:60px;height:90px;flex-shrink:0;" title="${book.title}">
+    ${cover}${overlay}
+  </div>`;
+}
+
+// ── FIND MISSING BOOKS IN A SERIES ──
+async function findMissingBooks(seriesName, author) {
+  const btn = document.querySelector(`.series-refresh-btn[data-series="${seriesName}"]`);
+  if (btn) { btn.textContent = '🔍 Searching...'; btn.disabled = true; }
+
+  const results = await searchSeries(seriesName);
+  const ownedBooks = await getBooksByStatus('owned');
+  const ownedTitles = ownedBooks.map(b => b.title.toLowerCase());
+
+  let added = 0;
+  for (const book of results) {
+    const isOwned = ownedTitles.some(t => t.includes(book.title.toLowerCase()) || book.title.toLowerCase().includes(t));
+    if (!isOwned) {
+      const isUpcoming = book.publishedDate && new Date(book.publishedDate) > new Date();
+      book.status = isUpcoming ? 'upcoming' : 'missing';
+      book.series = seriesName;
+      book.author = author || book.author;
+      const result = await upsertBook(book);
+      if (result === 'added') added++;
+    }
+  }
+
+  saveLog(`Series refresh: "${seriesName}" — found ${added} new missing/upcoming books`);
+  if (btn) { btn.textContent = '🔍 Find Missing Books'; btn.disabled = false; }
+  renderSeries();
+
+  if (added === 0) alert(`✅ No new missing books found for "${seriesName}" — your series looks complete!`);
+  else alert(`📚 Found ${added} missing/upcoming books for "${seriesName}" and added them to your series view!`);
+}
+
+// ── RENDER LOGS ──
 async function renderLogs() {
   const viewer = document.getElementById('logViewer');
   const logs = await getAllLogs();
   viewer.textContent = logs.length
     ? logs.sort((a, b) => b.timestamp - a.timestamp).map(l => `[${l.date}] ${l.message}`).join('\n')
-    : 'No log entries yet.';
+    : 'No log entries yet. Import a file to see activity here.';
 }
 
+// ── SHARE LOG ──
 document.getElementById('shareLogBtn')?.addEventListener('click', async () => {
   const logs = await getAllLogs();
   const content = logs.sort((a, b) => b.timestamp - a.timestamp).map(l => `[${l.date}] ${l.message}`).join('\n');
@@ -70,16 +164,62 @@ document.getElementById('shareLogBtn')?.addEventListener('click', async () => {
   a.click();
 });
 
-function bookCardHTML(book) {
+// ── BOOK CARD HTML ──
+function bookCardHTML(book, isWishlist) {
   const cover = book.coverUrl
-    ? `<img class="book-cover" src="${book.coverUrl}" alt="${book.title}" loading="lazy">`
+    ? `<img class="book-cover" src="${book.coverUrl}" alt="${book.title}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=book-cover-placeholder>🎧</div>'">`
     : `<div class="book-cover-placeholder">🎧</div>`;
-  return `<div class="book-card">${cover}<div class="book-info">
-    <div class="book-title">${book.title}</div>
-    <div class="book-author">${book.author || ''}</div>
-  </div></div>`;
+
+  const wishlistActions = isWishlist ? `
+    <div class="wishlist-actions">
+      <button class="btn-own" data-id="${book.id}" title="Mark as Purchased">✅ Purchased</button>
+      <button class="btn-remove" data-id="${book.id}" title="Remove from Wishlist">🗑️ Remove</button>
+    </div>` : '';
+
+  return `
+    <div class="book-card" data-id="${book.id}">
+      ${cover}
+      <div class="book-info">
+        <div class="book-title">${book.title}</div>
+        <div class="book-author">${book.author || ''}</div>
+        ${book.series ? `<div class="book-series">📖 ${book.series}${book.seriesNumber ? ` #${book.seriesNumber}` : ''}</div>` : ''}
+      </div>
+      ${wishlistActions}
+    </div>`;
 }
 
+// ── WISHLIST ACTIONS ──
+function attachWishlistActions() {
+  document.querySelectorAll('.btn-own').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await markBookAsOwned(btn.dataset.id);
+      saveLog(`Moved to library: book ID ${btn.dataset.id}`);
+      renderWishlist();
+    });
+  });
+
+  document.querySelectorAll('.btn-remove').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (confirm('Remove this book from your wishlist?')) {
+        await deleteBook(btn.dataset.id);
+        saveLog(`Removed from wishlist: book ID ${btn.dataset.id}`);
+        renderWishlist();
+      }
+    });
+  });
+}
+
+// ── ADD SERIES BUTTON ──
+document.getElementById('addSeriesBtn')?.addEventListener('click', () => {
+  const name = prompt('Enter the series name to track (e.g. "Wheel of Time"):');
+  if (!name) return;
+  const author = prompt('Enter the author name (e.g. "Robert Jordan"):');
+  findMissingBooks(name.trim(), author ? author.trim() : '');
+});
+
+// ── SEARCH BAR ──
 document.getElementById('searchBar')?.addEventListener('input', async (e) => {
   const q = e.target.value.toLowerCase();
   const books = await getAllBooks();
@@ -89,17 +229,20 @@ document.getElementById('searchBar')?.addEventListener('input', async (e) => {
     (b.series || '').toLowerCase().includes(q)
   );
   document.getElementById('libraryGrid').innerHTML = filtered.length
-    ? filtered.map(bookCardHTML).join('')
+    ? filtered.filter(b => b.status === 'owned').map(b => bookCardHTML(b, false)).join('')
     : '<p style="color:var(--text-muted)">No results found.</p>';
 });
 
+// ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/aureliaechoes/sw.js')
     .then(() => console.log('✅ Service Worker registered'));
 }
 
+// ── INITIALIZE ──
 document.addEventListener('DOMContentLoaded', async () => {
   await openLocalDB();
+  pruneOldLogs();
   renderLibrary();
-  console.log('🎧 Aurelia Echoes is running!');
+  console.log('🎧 Aurelia Echoes Phase 2 running!');
 });
