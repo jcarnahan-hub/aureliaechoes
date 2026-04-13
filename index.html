@@ -50,6 +50,22 @@
       <div id="seriesGrid" class="series-grid"></div>
     </section>
 
+    <!-- ADD SERIES DIALOG -->
+    <div id="seriesDialogOverlay" class="dialog-overlay hidden">
+      <div class="dialog-box">
+        <h3 class="dialog-title">📖 Track New Series</h3>
+        <p class="dialog-subtitle">Enter the series and author to search Google Books for all books including missing and upcoming ones.</p>
+        <label class="dialog-label">Series Name</label>
+        <input type="text" id="seriesNameInput" class="dialog-input" placeholder="e.g. Outlander"/>
+        <label class="dialog-label">Author Name</label>
+        <input type="text" id="seriesAuthorInput" class="dialog-input" placeholder="e.g. Diana Gabaldon"/>
+        <div class="dialog-actions">
+          <button class="btn-secondary" id="cancelSeriesBtn">Cancel</button>
+          <button class="btn-primary" id="confirmSeriesBtn">🔍 Find Series</button>
+        </div>
+      </div>
+    </div>
+
     <!-- WISHLIST TAB -->
     <section id="tab-wishlist" class="tab-content">
       <div class="section-header">
