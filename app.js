@@ -268,8 +268,25 @@ if ('serviceWorker' in navigator) {
     .then(() => console.log('✅ Service Worker registered'));
 }
 
+// ── THEME TOGGLE ──
+const themeToggle = document.getElementById('themeToggle');
+const toggleLabel = document.getElementById('toggleLabel');
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('ae-theme', theme);
+  if (toggleLabel) toggleLabel.textContent = theme === 'dark' ? 'Dark' : 'Light';
+}
+
+themeToggle?.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
 // ── INITIALIZE ──
 document.addEventListener('DOMContentLoaded', async () => {
+  const savedTheme = localStorage.getItem('ae-theme') || 'light';
+  applyTheme(savedTheme);
   await openLocalDB();
   pruneOldLogs();
   renderLibrary();
