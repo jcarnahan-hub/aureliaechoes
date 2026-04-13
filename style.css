@@ -47,5 +47,74 @@
   cursor: pointer;
   transition: all 0.2s;
 }
+/* ── SERIES DIALOG ── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dialog-box {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-gold);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.dialog-title {
+  font-family: var(--font-heading);
+  color: var(--accent-gold);
+  font-size: 1.3rem;
+}
+
+.dialog-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.dialog-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.dialog-input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  outline: none;
+  width: 100%;
+  transition: border 0.2s;
+}
+
+.dialog-input:focus { border-color: var(--accent-gold); }
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.dialog-actions .btn-primary,
+.dialog-actions .btn-secondary {
+  flex: 1;
+}
 
 .btn-remove:hover { background: var(--accent-warm); color: var(--bg-primary); }
