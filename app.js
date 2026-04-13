@@ -217,10 +217,44 @@ const seriesNameInput = document.getElementById('seriesNameInput');
 const seriesAuthorInput = document.getElementById('seriesAuthorInput');
 
 document.getElementById('addSeriesBtn')?.addEventListener('click', () => {
+  if (!seriesOverlay) {
+    console.error('❌ Series dialog not found in HTML');
+    return;
+  }
   seriesNameInput.value = '';
   seriesAuthorInput.value = '';
+  seriesOverlay.style.display = 'flex';
   seriesOverlay.classList.remove('hidden');
-  setTimeout(() => seriesNameInput.focus(), 100);
+  setTimeout(() => seriesNameInput.focus(), 150);
+});
+
+document.getElementById('cancelSeriesBtn')?.addEventListener('click', () => {
+  seriesOverlay.style.display = 'none';
+  seriesOverlay.classList.add('hidden');
+});
+
+document.getElementById('confirmSeriesBtn')?.addEventListener('click', () => {
+  const name = seriesNameInput.value.trim();
+  const author = seriesAuthorInput.value.trim();
+  if (!name) {
+    seriesNameInput.style.borderColor = 'var(--accent-warm)';
+    seriesNameInput.focus();
+    return;
+  }
+  seriesOverlay.style.display = 'none';
+  seriesOverlay.classList.add('hidden');
+  findMissingBooks(name, author);
+});
+
+seriesOverlay?.addEventListener('click', (e) => {
+  if (e.target === seriesOverlay) {
+    seriesOverlay.style.display = 'none';
+    seriesOverlay.classList.add('hidden');
+  }
+});
+
+seriesAuthorInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('confirmSeriesBtn').click();
 });
 
 document.getElementById('cancelSeriesBtn')?.addEventListener('click', () => {
