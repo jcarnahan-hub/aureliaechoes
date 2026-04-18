@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aurelia-echoes-v1';
+const CACHE_NAME = 'aurelia-echoes-v3';
 const ASSETS = [
   '/aureliaechoes/',
   '/aureliaechoes/index.html',
