@@ -1,94 +1,225 @@
-// ── AURELIA ECHOES: Import Manager ──
+// ── AURELIA ECHOES: Import Manager (Phase 4) ──
 
 let importFileData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('fileImport');
   const runBtn = document.getElementById('runImportBtn');
-  if (fileInput) fileInput.addEventListener('change', (e) => { importFileData = e.target.files[0]; });
+  const fileLabel = document.querySelector('label[for="fileImport"]');
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      importFileData = e.target.files[0];
+      if (fileLabel) fileLabel.textContent = `📂 ${importFileData.name}`;
+      if (typeof showToast === 'function')
+        showToast(`File selected: ${importFileData.name}`, 'info');
+    });
+  }
+
   if (runBtn) runBtn.addEventListener('click', runImport);
 });
 
+// ── MAIN IMPORT FUNCTION ──
 async function runImport() {
-  if (!importFileData) { alert('Please choose a CSV or JSON file first.'); return; }
+  if (!importFileData) {
+    if (typeof showToast === 'function') showToast('Please choose a file first.', 'warning');
+    return;
+  }
 
+  if (typeof showToast === 'function') showToast('Reading your file...', 'info');
   const text = await importFileData.text();
   let books = [];
 
   try {
-    books = importFileData.name.endsWith('.json') ? JSON.parse(text) : parseCSV(text);
+    books = importFileData.name.endsWith('.json')
+      ? JSON.parse(text)
+      : parseCSV(text);
   } catch (err) {
-    alert('❌ Could not read this file. Please check the format and try again.');
-    saveLog(`IMPORT ERROR: Could not parse file — ${err.message}`);
+    if (typeof showToast === 'function') showToast('Could not read file. Check format.', 'error');
+    if (typeof saveLog === 'function') saveLog(`IMPORT ERROR: ${err.message}`);
     return;
   }
 
+  if (books.length === 0) {
+    if (typeof showToast === 'function') showToast('No books found in this file.', 'warning');
+    return;
+  }
+
+  if (typeof showToast === 'function')
+    showToast(`Validating ${books.length} entries...`, 'info');
+
   const { valid, errors } = validateBooks(books);
 
-  if (errors.length > 0) {
-    const proceed = confirm(
-      `⚠️ Found ${errors.length} issue(s):\n\n` +
-      errors.slice(0, 5).join('\n') +
-      (errors.length > 5 ? `\n...and ${errors.length - 5} more.` : '') +
-      `\n\nProceed with ${valid.length} valid entries?`
-    );
-    if (!proceed) return;
+  if (errors.length > 0 && typeof saveLog === 'function') {
+    saveLog(`VALIDATION: ${errors.length} issues — ${errors.slice(0,3).join(' | ')}`);
   }
 
   let added = 0, updated = 0, skipped = 0;
+
   for (const book of valid) {
     try {
+      // Fetch cover art if missing
+      if (!book.coverUrl && book.title && book.author &&
+          book.author !== 'Unknown Author' &&
+          typeof fetchCoverUrl === 'function') {
+        book.coverUrl = await fetchCoverUrl(book.title, book.author);
+      }
       const result = await upsertBook(book);
       if (result === 'added') added++;
       else updated++;
     } catch (e) {
       skipped++;
-      saveLog(`SKIP: "${book.title}" — ${e.message}`);
+      if (typeof saveLog === 'function')
+        saveLog(`SKIP: "${book.title}" — ${e.message}`);
     }
   }
 
-  const summary = `Import complete — Added: ${added}, Updated: ${updated}, Skipped: ${skipped + (books.length - valid.length)}`;
-  saveLog(summary);
+  const skippedTotal = skipped + (books.length - valid.length);
+  const summary = `Import complete — Added: ${added}, Updated: ${updated}, Skipped: ${skippedTotal}`;
+  if (typeof saveLog === 'function') saveLog(summary);
 
   document.getElementById('summaryText').textContent =
-    `✅ Added ${added} · 🔄 Updated ${updated} · ⏭️ Skipped ${skipped + (books.length - valid.length)}`;
+    `✅ Added ${added} · 🔄 Updated ${updated} · ⏭️ Skipped ${skippedTotal}`;
   document.getElementById('importSummary').classList.remove('hidden');
+
+  if (typeof showToast === 'function')
+    showToast(`Import complete! Added ${added} books.`, 'success');
   if (typeof renderLibrary === 'function') renderLibrary();
+  if (typeof renderSeries === 'function') renderSeries();
 }
 
+// ── PARSE CSV ──
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(',').map(h =>
+    h.trim().toLowerCase().replace(/"/g, '').replace(/\s+/g, '')
+  );
+
+  console.log('📋 CSV Headers detected:', headers);
+
   return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') {
+        inQuotes = !inQuotes;
+      } else if (line[i] === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += line[i];
+      }
+    }
+    values.push(current.trim());
     const book = {};
     headers.forEach((h, i) => { book[h] = values[i] || ''; });
     return book;
-  });
+  }).filter(b => b && Object.keys(b).length > 0);
 }
 
+// ── VALIDATE & NORMALIZE BOOKS ──
 function validateBooks(books) {
-  const valid = [], errors = [];
+  const valid = [];
+  const errors = [];
+
+  // Log first book's keys so we can see what columns exist
+  if (books.length > 0) {
+    console.log('📖 First book raw data:', books[0]);
+    console.log('📖 Available keys:', Object.keys(books[0]));
+  }
+
   books.forEach((book, idx) => {
     const row = idx + 2;
-    if (!book.title && !book.Title) { errors.push(`Row ${row}: Missing title`); return; }
-    const normalized = {
-      title: book.title || book.Title || '',
-      author: book.author || book.Author || 'Unknown Author',
-      series: book.series || book.Series || '',
-      seriesNumber: book.seriesnumber || book['series number'] || '',
-      status: (book.status || book.Status || 'owned').toLowerCase(),
-      coverUrl: book.coverurl || book.cover || '',
-      asin: book.asin || book.ASIN || ''
-    };
-    if (normalized.seriesNumber && isNaN(parseFloat(normalized.seriesNumber))) {
-      errors.push(`Row ${row}: Series number "${normalized.seriesNumber}" is not valid`);
+
+    // ── TITLE: try every known column name ──
+    const title =
+      book['title'] || book['booktitle'] || book['book title'] ||
+      book['Title'] || book['BookTitle'] || book['name'] || '';
+
+    if (!title) {
+      errors.push(`Row ${row}: Missing title`);
+      return;
     }
-    valid.push(normalized);
+
+    // ── AUTHOR: Audible Library Extractor uses "authorname" or "author" ──
+    const author =
+      book['authorname'] || book['author name'] || book['author'] ||
+      book['Author'] || book['AuthorName'] || book['authors'] ||
+      book['creatorname'] || book['creator'] || '';
+
+    // ── SERIES ──
+    const rawSeries =
+      book['seriesname'] || book['series name'] || book['series'] ||
+      book['Series'] || book['SeriesName'] || '';
+
+    // Clean up series name — remove "book X" suffixes
+    const series = cleanSeriesName(rawSeries);
+
+    // ── SERIES NUMBER ──
+    const seriesNumber =
+      book['seriesno'] || book['series#'] || book['seriesnumber'] ||
+      book['series number'] || book['SeriesNumber'] || book['position'] ||
+      book['bookno'] || extractSeriesNumber(rawSeries) || '';
+
+    // ── STATUS ──
+    const rawStatus = book['status'] || book['Status'] || 'owned';
+    const status = ['owned','wishlist','missing','upcoming'].includes(
+      rawStatus.toLowerCase()) ? rawStatus.toLowerCase() : 'owned';
+
+    // ── COVER ──
+    const coverUrl =
+      book['coverurl'] || book['cover'] || book['imageurl'] ||
+      book['image url'] || book['cover url'] || book['coverimage'] ||
+      book['productimage'] || book['image'] || '';
+
+    // ── OTHER FIELDS ──
+    const asin = book['asin'] || book['ASIN'] || '';
+    const narrator = book['narratorname'] || book['narrator'] ||
+                     book['Narrator'] || '';
+    const duration = book['duration'] || book['Duration'] ||
+                     book['length'] || '';
+    const rating = book['myrating'] || book['rating'] ||
+                   book['Rating'] || '';
+
+    valid.push({
+      title: title.trim(),
+      author: author.trim() || 'Unknown Author',
+      series: series.trim(),
+      seriesNumber: seriesNumber.toString().trim(),
+      status,
+      coverUrl: coverUrl.trim(),
+      asin: asin.trim(),
+      narrator: narrator.trim(),
+      duration: duration.trim(),
+      rating: rating.trim()
+    });
   });
+
   return { valid, errors };
 }
 
+// ── CLEAN SERIES NAME ──
+// Removes "book 2", "(book 2)", "series book 2" suffixes
+function cleanSeriesName(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/\s*[\(\[]?book\s*\d+[\)\]]?\s*/gi, '')
+    .replace(/\s*,?\s*#?\d+(\.\d+)?\s*$/gi, '')
+    .replace(/\s*[\(\[]\s*[\)\]]\s*/g, '')
+    .trim();
+}
+
+// ── EXTRACT SERIES NUMBER FROM NAME ──
+function extractSeriesNumber(raw) {
+  if (!raw) return '';
+  const match = raw.match(/book\s*(\d+)/i) || raw.match(/#(\d+)/);
+  return match ? match[1] : '';
+}
+
+// ── CLOSE SUMMARY ──
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('closeSummaryBtn')?.addEventListener('click', () => {
     document.getElementById('importSummary').classList.add('hidden');
