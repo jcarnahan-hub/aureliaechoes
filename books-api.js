@@ -1,6 +1,6 @@
 // ── AURELIA ECHOES: Google Books API (Phase 4) ──
 
-const GOOGLE_BOOKS_API_KEY = 'PASTE_YOUR_GOOGLE_BOOKS_API_KEY_HERE';
+const GOOGLE_BOOKS_API_KEY = 'AIzaSyACDkAs-5myPgb4Emn6YLqc_MAnOSzqynk';
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1';
 
 // ── SEARCH FOR BOOKS ──
