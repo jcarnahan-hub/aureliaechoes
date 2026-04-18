@@ -51,6 +51,12 @@
         <h2>My Library</h2>
         <input type="text" id="searchBar" placeholder="🔍 Search books or authors..." class="search-bar"/>
       </div>
+      <div class="library-toolbar">
+        <button class="btn-secondary" id="fetchCoversBtn" style="font-size:0.82rem;padding:7px 14px;">
+          🖼️ Fetch Missing Covers (50 at a time)
+        </button>
+        <span id="bookCount" class="book-count-label"></span>
+      </div>
       <div id="libraryGrid" class="book-grid"></div>
     </section>
 
