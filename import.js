@@ -31,9 +31,12 @@ async function runImport() {
   let books = [];
 
   try {
-    books = importFileData.name.endsWith('.json')
-      ? JSON.parse(text)
-      : parseCSV(text);
+    if (importFileData.name.endsWith('.json')) {
+  const parsed = JSON.parse(text);
+  books = Array.isArray(parsed) ? parsed : [];
+} else {
+  books = parseCSV(text);
+}
   } catch (err) {
     if (typeof showToast === 'function') showToast('Could not read file. Check format.', 'error');
     if (typeof saveLog === 'function') saveLog(`IMPORT ERROR: ${err.message}`);
