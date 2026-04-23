@@ -82,16 +82,35 @@ async function renderSeries() {
   const seriesMap = {};
 
   books.forEach(book => {
+    // Skip books with no series or clearly bad series names
     if (!book.series) return;
-    if (!seriesMap[book.series]) {
-      seriesMap[book.series] = { author: book.author, owned: [], missing: [], upcoming: [] };
+    const seriesName = book.series.trim();
+    if (!seriesName) return;
+    if (seriesName.toLowerCase().startsWith('book ')) return;
+    if (/^book\s*\d+$/i.test(seriesName)) return;
+
+    if (!seriesMap[seriesName]) {
+      seriesMap[seriesName] = {
+        author: '',
+        owned: [],
+        missing: [],
+        upcoming: []
+      };
     }
-    if (book.status === 'owned') seriesMap[book.series].owned.push(book);
-    else if (book.status === 'missing') seriesMap[book.series].missing.push(book);
-    else if (book.status === 'upcoming') seriesMap[book.series].upcoming.push(book);
+
+    // Set author — prefer non-empty, non-Unknown value
+    if (book.author && book.author !== 'Unknown Author') {
+      seriesMap[seriesName].author = book.author;
+    }
+
+    if (book.status === 'owned') seriesMap[seriesName].owned.push(book);
+    else if (book.status === 'missing') seriesMap[seriesName].missing.push(book);
+    else if (book.status === 'upcoming') seriesMap[seriesName].upcoming.push(book);
   });
 
-  const names = Object.keys(seriesMap);
+  // Sort series alphabetically
+  const names = Object.keys(seriesMap).sort((a, b) => a.localeCompare(b));
+
   if (!names.length) {
     grid.innerHTML = '<p style="color:var(--text-muted)">No series found. Import books with series data or use "+ Track New Series".</p>';
     return;
@@ -101,10 +120,19 @@ async function renderSeries() {
     const s = seriesMap[name];
     const total = s.owned.length + s.missing.length + s.upcoming.length;
     const pct = total ? Math.round((s.owned.length / total) * 100) : 0;
+    const authorDisplay = s.author || 'Unknown Author';
+
+    // Sort books by series number within each group
+    const sortByNum = arr => arr.sort((a, b) => {
+      const na = parseFloat(a.seriesNumber) || 0;
+      const nb = parseFloat(b.seriesNumber) || 0;
+      return na - nb;
+    });
+
     return `
       <div class="series-card" data-series="${name}">
         <div class="series-title">${name}</div>
-        <div class="series-author">by ${s.author || 'Unknown'}</div>
+        <div class="series-author">by ${authorDisplay}</div>
         <div class="series-progress-bar">
           <div class="series-progress-fill" style="width:${pct}%"></div>
         </div>
@@ -115,17 +143,23 @@ async function renderSeries() {
           · ${pct}% complete
         </div>
         <div class="series-books">
-          ${s.owned.map(b => miniBookCard(b, 'owned')).join('')}
-          ${s.missing.map(b => miniBookCard(b, 'missing')).join('')}
-          ${s.upcoming.map(b => miniBookCard(b, 'upcoming')).join('')}
+          ${sortByNum(s.owned).map(b => miniBookCard(b, 'owned')).join('')}
+          ${sortByNum(s.missing).map(b => miniBookCard(b, 'missing')).join('')}
+          ${sortByNum(s.upcoming).map(b => miniBookCard(b, 'upcoming')).join('')}
         </div>
         <button class="btn-secondary series-refresh-btn"
-          data-series="${name}" data-author="${s.author}"
+          data-series="${name}" data-author="${authorDisplay}"
           style="margin-top:14px;font-size:0.8rem;padding:6px 14px;">
           🔍 Find Missing Books
         </button>
       </div>`;
   }).join('');
+
+  document.querySelectorAll('.series-refresh-btn').forEach(btn => {
+    btn.addEventListener('click', () =>
+      findMissingBooks(btn.dataset.series, btn.dataset.author));
+  });
+}
 
   document.querySelectorAll('.series-refresh-btn').forEach(btn => {
     btn.addEventListener('click', () =>
@@ -313,15 +347,28 @@ seriesAuthorInput?.addEventListener('keydown', (e) => {
 
 // ── SEARCH BAR ──
 document.getElementById('searchBar')?.addEventListener('input', async (e) => {
-  const q = e.target.value.toLowerCase();
+  const q = e.target.value.toLowerCase().trim();
+  const grid = document.getElementById('libraryGrid');
+  const countLabel = document.getElementById('bookCount');
+
+  if (!q) {
+    renderLibrary();
+    return;
+  }
+
   const books = await getAllBooks();
   const filtered = books.filter(b =>
-    (b.title || '').toLowerCase().includes(q) ||
-    (b.author || '').toLowerCase().includes(q) ||
-    (b.series || '').toLowerCase().includes(q)
+    b.status === 'owned' && (
+      (b.title || '').toLowerCase().includes(q) ||
+      (b.author || '').toLowerCase().includes(q) ||
+      (b.series || '').toLowerCase().includes(q) ||
+      (b.narrator || '').toLowerCase().includes(q)
+    )
   );
-  document.getElementById('libraryGrid').innerHTML = filtered.length
-    ? filtered.filter(b => b.status === 'owned').map(b => bookCardHTML(b, false)).join('')
+
+  if (countLabel) countLabel.textContent = `${filtered.length} results`;
+  grid.innerHTML = filtered.length
+    ? filtered.map(b => bookCardHTML(b, false)).join('')
     : '<p style="color:var(--text-muted)">No results found.</p>';
 });
 
